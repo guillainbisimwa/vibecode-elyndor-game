@@ -1,48 +1,103 @@
 import os
 import json
 import random
+import asyncio
 from typing import List, Dict, Any, Optional, Tuple
 from collections import deque
 import urllib.request
 import urllib.error
 
+# Import Google Agent Development Kit (ADK) primitives
+from google.adk.agents import Agent as AdkAgent
+from google.adk.runners import InMemoryRunner
+from google.genai import types as genai_types
+
 # Dual-mode AI system: check for Gemini API key
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
 
-def call_gemini(prompt: str, json_mode: bool = False) -> str:
-    """Helper to query Google Gemini model directly via HTTP REST API.
-    Provides robust fallback if key is missing or request fails.
+def run_adk_agent_sync(agent_name: str, instruction: str, prompt: str, json_mode: bool = False) -> str:
+    """Helper to query the Google Gemini model using official Google ADK Agents and Runners.
+    Ensures that conversation states and trace logging follow ADK standards.
+    Provides robust fallback if the API key is missing or any exception occurs.
     """
     if not GEMINI_API_KEY:
         return ""
 
-    url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key={GEMINI_API_KEY}"
-    headers = {"Content-Type": "application/json"}
-
-    data = {
-        "contents": [{"parts": [{"text": prompt}]}],
-        "generationConfig": {
-            "temperature": 0.7,
-            "maxOutputTokens": 800,
-        }
-    }
-
+    # Build GenerateContentConfig using Google GenAI types
     if json_mode:
-        data["generationConfig"]["responseMimeType"] = "application/json"
+        config = genai_types.GenerateContentConfig(
+            temperature=0.7,
+            max_output_tokens=800,
+            response_mime_type="application/json"
+        )
+    else:
+        config = genai_types.GenerateContentConfig(
+            temperature=0.7,
+            max_output_tokens=800
+        )
 
     try:
-        req = urllib.request.Request(url, data=json.dumps(data).encode("utf-8"), headers=headers, method="POST")
-        with urllib.request.urlopen(req, timeout=8.0) as response:
-            res_data = json.loads(response.read().decode("utf-8"))
-            text = res_data["candidates"][0]["content"]["parts"][0]["text"]
-            return text.strip()
+        # Create a real Google ADK Agent
+        adk_agent = AdkAgent(
+            name=agent_name,
+            model="gemini-1.5-flash",  # Official recommended model
+            instruction=instruction,
+            generate_content_config=config
+        )
+
+        # Initialize the ADK InMemoryRunner to manage the session/turn lifecycle
+        runner = InMemoryRunner(agent=adk_agent, app_name="app")
+
+        async def _execute():
+            # Create a fresh ADK Session for this turn
+            session = await runner.session_service.create_session_async(user_id="player")
+            
+            # Run the agent turn asynchronously
+            events = []
+            async for event in runner.run_async(user_id="player", session_id=session.id, text=prompt):
+                events.append(event)
+            
+            # Extract content from the model response events
+            response_text = ""
+            for ev in events:
+                if ev.author == agent_name and ev.content:
+                    for part in ev.content.parts:
+                        if part.text:
+                            response_text += part.text
+            return response_text.strip()
+
+        # Handle event loops when running in synchronous threads or inside FastAPI
+        try:
+            loop = asyncio.get_event_loop()
+        except RuntimeError:
+            loop = asyncio.new_event_loop()
+            asyncio.set_event_loop(loop)
+
+        if loop.is_running():
+            import concurrent.futures
+            with concurrent.futures.ThreadPoolExecutor() as executor:
+                future = executor.submit(asyncio.run, _execute())
+                return future.result()
+        else:
+            return loop.run_until_complete(_execute())
+
     except Exception as e:
-        print(f"Gemini API Call error: {e}. Falling back to procedural agents.")
+        print(f"ADK Agent '{agent_name}' error: {e}. Falling back to procedural engine.")
         return ""
 
+# Keep call_gemini for any other references, routed directly through the ADK helper
+def call_gemini(prompt: str, json_mode: bool = False) -> str:
+    return run_adk_agent_sync(
+        agent_name="GeminiFallbackAgent",
+        instruction="You are a general assistant helping with procedural content generation.",
+        prompt=prompt,
+        json_mode=json_mode
+    )
+
 class NarrativeAgent:
-    """Agent 1: Narrative Agent
+    """Agent 1: Narrative Agent (ADK-powered)
     Responsibilities: Generates immersive elven & dark-fantasy lore, factions, NPC personalities, and dialogues.
+    Uses Google ADK to invoke LLM-based narrative generation, maintaining absolute state.
     """
     def __init__(self):
         self.personalities = ["mysterious", "cynical", "warm", "rebellious", "weary", "noble", "eccentric"]
@@ -52,20 +107,34 @@ class NarrativeAgent:
         personality = random.choice(self.personalities)
         faction = random.choice(self.factions)
 
-        prompt = (
-            f"Generate a JSON profile for a fantasy RPG NPC named '{name}' living in the region '{region}'. "
-            f"Personality: {personality}. Faction: {faction}. "
-            "Output must be in JSON with fields: 'personality', 'backstory', 'greeting', 'description'."
+        instruction = (
+            "You are a master RPG writer and narrative director. "
+            "Your task is to generate high-fidelity, highly immersive NPC profiles "
+            "for a dark-fantasy elven role-playing game. Always return a valid JSON object."
         )
 
-        gemini_res = call_gemini(prompt, json_mode=True)
-        if gemini_res:
+        prompt = (
+            f"Generate an exquisite fantasy NPC profile for '{name}' who lives in '{region}'. "
+            f"Personality archetype: '{personality}'. Affiliated faction: '{faction}'. "
+            "Your output must be JSON with exactly these fields: "
+            "'personality' (short description), 'backstory' (atmospheric paragraph), "
+            "'greeting' (immersive welcoming sentence in-character), 'description' (visual features)."
+        )
+
+        adk_res = run_adk_agent_sync(
+            agent_name="NarrativeNPCGenerator",
+            instruction=instruction,
+            prompt=prompt,
+            json_mode=True
+        )
+
+        if adk_res:
             try:
-                return json.loads(gemini_res)
+                return json.loads(adk_res)
             except Exception:
                 pass
 
-        # Robust procedural fallback
+        # Robust procedural fallback in case of connection failure or missing API key
         backstories = [
             f"An outcast from the {faction} who discovered a terrifying truth in the deep crypts of {region}.",
             f"A seasoned tracker who has guarded the borders of {region} for decades, witness to rising dark magic.",
@@ -94,16 +163,28 @@ class NarrativeAgent:
 
     def generate_dialogue_response(self, npc_name: str, personality: str, history: List[Dict[str, str]], message: str) -> str:
         history_str = "\n".join([f"{h['role'].upper()}: {h['text']}" for h in history[-5:]])
-        prompt = (
-            f"You are the NPC '{npc_name}', possessing a '{personality}' personality in a dark-fantasy RPG. "
-            f"Conversation History:\n{history_str}\n"
-            f"PLAYER says: '{message}'\n"
-            "Write a single concise dialogue reply (max 3 sentences) in-character. Keep it atmospheric and dark-fantasy styled."
+        
+        instruction = (
+            f"You are the NPC '{npc_name}' with a '{personality}' personality in Elyndor, a dark elven fantasy RPG. "
+            "Write highly atmospheric, concise, and lore-rich dialogue replies. Stay fully in character. "
+            "Do NOT speak as an AI assistant. Limit replies to a maximum of 3 sentences."
         )
 
-        gemini_res = call_gemini(prompt, json_mode=False)
-        if gemini_res:
-            return gemini_res
+        prompt = (
+            f"Conversation History:\n{history_str}\n"
+            f"PLAYER says: '{message}'\n"
+            "Generate your atmospheric in-character response:"
+        )
+
+        adk_res = run_adk_agent_sync(
+            agent_name="NarrativeDialogueAgent",
+            instruction=instruction,
+            prompt=prompt,
+            json_mode=False
+        )
+
+        if adk_res:
+            return adk_res
 
         # Procedural dialogue engine
         replies = [
@@ -114,6 +195,7 @@ class NarrativeAgent:
             "The ancient aether pathways are shifting. If you truly wish to help, listen closely."
         ]
         return random.choice(replies)
+
 
 
 class WorldAgent:
