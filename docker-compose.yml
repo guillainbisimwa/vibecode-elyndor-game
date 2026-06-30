@@ -1,0 +1,44 @@
+services:
+  db:
+    image: postgres:15-alpine
+    container_name: elyndor-postgres
+    restart: always
+    environment:
+      POSTGRES_USER: elyndor_admin
+      POSTGRES_PASSWORD: secure_elyndor_password_99
+      POSTGRES_DB: legends_of_elyndor
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: elyndor-backend
+    restart: always
+    ports:
+      - "8000:8000"
+    environment:
+      - DATABASE_URL=postgresql://elyndor_admin:secure_elyndor_password_99@db:5432/legends_of_elyndor
+      - JWT_SECRET=super_secret_elyndor_key_change_me_in_production
+      - GEMINI_API_KEY=${GEMINI_API_KEY}
+    depends_on:
+      - db
+
+  frontend:
+    image: node:20-alpine
+    container_name: elyndor-frontend
+    restart: always
+    working_dir: /app
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./frontend:/app
+    command: sh -c "npm install && npm run dev"
+    environment:
+      - VITE_API_URL=http://localhost:8000
+
+volumes:
+  postgres_data:
