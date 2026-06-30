@@ -1,0 +1,50 @@
+[
+  {
+    "name": "aria_rebel_greeting",
+    "data": [
+      {
+        "query": "Hello, Aria. What is happening in Eldergate? Are the Wardens safe?",
+        "expected_tool_use": [],
+        "expected_intermediate_agent_responses": [],
+        "reference": ""
+      }
+    ],
+    "initial_session": {
+      "state": {},
+      "app_name": "app",
+      "user_id": "player"
+    }
+  },
+  {
+    "name": "eldrin_sage_quest_ask",
+    "data": [
+      {
+        "query": "Sage Eldrin, I seek a task or quest. Do you have a job for me to help save Shadow Vale?",
+        "expected_tool_use": [],
+        "expected_intermediate_agent_responses": [],
+        "reference": ""
+      }
+    ],
+    "initial_session": {
+      "state": {},
+      "app_name": "app",
+      "user_id": "player"
+    }
+  },
+  {
+    "name": "maron_trader_conspiracies",
+    "data": [
+      {
+        "query": "Maron, what secrets are hidden in the Crystal Peaks? Tell me about the void-corruption.",
+        "expected_tool_use": [],
+        "expected_intermediate_agent_responses": [],
+        "reference": ""
+      }
+    ],
+    "initial_session": {
+      "state": {},
+      "app_name": "app",
+      "user_id": "player"
+    }
+  }
+]

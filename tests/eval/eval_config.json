@@ -1,0 +1,12 @@
+{
+  "criteria": {
+    "dark_fantasy_alignment": 0.6
+  },
+  "custom_metrics": {
+    "dark_fantasy_alignment": {
+      "code_config": {
+        "name": "app.metrics.dark_fantasy_alignment"
+      }
+    }
+  }
+}
