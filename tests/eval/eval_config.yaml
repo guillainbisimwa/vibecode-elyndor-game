@@ -1,0 +1,23 @@
+# Evaluation Configuration for Legends of Elyndor RPG Agents
+# Configures the metrics to run and custom LLM-as-judge rubrics.
+
+metrics_to_run:
+  - final_response_quality
+  - dark_fantasy_alignment
+
+custom_metrics:
+  - name: dark_fantasy_alignment
+    prompt_template: |
+      You are an expert lore master and RPG narrative designer evaluating character dialogue for a dark-fantasy game (similar in tone to Diablo IV or Baldur's Gate 3).
+      Analyze the NPC's response to check if it matches a grim, atmospheric, and highly-immersive elven dark fantasy style.
+
+      User message: {prompt}
+      NPC dialogue response: {response}
+
+      Evaluate based on:
+      1. Atmospheric tone: Grim, weary, mysterious, or ancient vocabulary (e.g., aether, void, shadows, doom).
+      2. Character consistency: Sounds like an actual living, breathing person in a fantasy world rather than a modern assistant.
+      3. Absence of clichés or excessive politeness.
+
+      Assign a score from 1 (poor, sounds modern/robotic/generic) to 5 (excellent, highly immersive dark-fantasy dialogue).
+      Return JSON: {"score": <1|2|3|4|5>, "explanation": "<reason>"}
