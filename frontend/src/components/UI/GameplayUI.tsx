@@ -101,7 +101,7 @@ const GameplayUI: React.FC = () => {
         </button>
       </div>
 
-      {/* Center Panel: Interactive Phaser Game */}
+      {/* Center Panel: Interactive 3D Game */}
       <div className="flex-1 h-full relative">
         <GameplayCanvas />
       </div>
