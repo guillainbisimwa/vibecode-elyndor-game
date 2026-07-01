@@ -143,7 +143,7 @@ export const useGameStore = create<GameState>((set, get) => ({
   dialogueHistory: [],
   dashboardLogs: ["Launch into the lands of Elyndor!"],
   
-  enemyHp: 100,
+  enemyHp: 0,
   enemyMaxHp: 100,
   enemyName: "Fallen Ghoul",
   combatLogs: [],
