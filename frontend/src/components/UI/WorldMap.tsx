@@ -2,7 +2,7 @@ import React from 'react';
 import { useGameStore, Region } from '../../store/gameStore';
 
 const WorldMap: React.FC = () => {
-  const { regions, character, setScreen, fetchActiveCharacter, token, isMockMode } = useGameStore();
+  const { regions, character, setScreen, isMockMode } = useGameStore();
 
   const handleTravel = async (region: Region) => {
     if (!character) return;
@@ -59,7 +59,7 @@ const WorldMap: React.FC = () => {
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         {regions.map((reg) => {
           const meta = regionMetadata[reg.name as keyof typeof regionMetadata] || { emoji: "🗺️", bg: "from-zinc-950/40 to-[#0b0c10]" };
-          const isLocked = character && character.level < reg.difficulty_level;
+          const isLocked = !!(character && character.level < reg.difficulty_level);
 
           return (
             <div 
