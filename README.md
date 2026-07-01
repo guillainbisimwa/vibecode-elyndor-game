@@ -41,28 +41,28 @@ The game's lifecycle is managed by six collaborative AI agents executing discret
 
 ```mermaid
 graph TD
-    User([Player Browser Client]) -->|Interact / Move / Chat| FastAPI[FastAPI Web Server]
-    
-    subgraph Multi-Agent Collaboration Studio [Multi-Agent Collaboration Studio]
-        FastAPI -->|Request Dialogue / Lore| Narrative[Narrative Agent (ADK-powered)]
-        FastAPI -->|Generate Tilemap Layout| World[World Agent]
-        FastAPI -->|Color Themes / Art Prompts| Asset[Asset Agent]
-        FastAPI -->|Scale Rewards / Leveling| Quest[Quest Agent]
-        FastAPI -->|Validate Events / Mutate State| Consistency[Consistency Agent]
-        FastAPI -->|Balance DMG / Skill Pools| Combat[Combat Agent]
-        
-        Narrative -->|Instantiate ADK Agent & Runner| ADK[Google ADK Engine]
-        World -->|BFS Solvability check| PathValidator[Path Solvability BFS Engine]
-    end
-    
-    subgraph Database State Storage [Database State Storage]
-        FastAPI -->|Read / Write State| DB[(PostgreSQL / SQLite Database)]
-        Consistency -->|Mark dead NPCs / Lore history| DB
+    User(["Player Browser Client"]) -->|"Interact / Move / Chat"| FastAPI["FastAPI Web Server"]
+
+    subgraph studio [Multi-Agent Collaboration Studio]
+        FastAPI -->|"Request Dialogue / Lore"| Narrative["Narrative Agent (ADK-powered)"]
+        FastAPI -->|"Generate Tilemap Layout"| World["World Agent"]
+        FastAPI -->|"Color Themes / Art Prompts"| Asset["Asset Agent"]
+        FastAPI -->|"Scale Rewards / Leveling"| Quest["Quest Agent"]
+        FastAPI -->|"Validate Events / Mutate State"| Consistency["Consistency Agent"]
+        FastAPI -->|"Balance DMG / Skill Pools"| Combat["Combat Agent"]
+
+        Narrative -->|"Instantiate ADK Agent & Runner"| ADK["Google ADK Engine"]
+        World -->|"BFS Solvability check"| PathValidator["Path Solvability BFS Engine"]
     end
 
-    subgraph External Developer / Agent tooling [External Developer / Agent tooling]
-        Developer([LLM Developer / Client]) -->|JSON-RPC via Stdio| MCPServer[Custom MCP Server]
-        MCPServer -->|Query Real-Time Stats| DB
+    subgraph storage [Database State Storage]
+        FastAPI -->|"Read / Write State"| DB[("PostgreSQL / SQLite Database")]
+        Consistency -->|"Mark dead NPCs / Lore history"| DB
+    end
+
+    subgraph tooling [External Developer / Agent Tooling]
+        Developer(["LLM Developer / Client"]) -->|"JSON-RPC via Stdio"| MCPServer["Custom MCP Server"]
+        MCPServer -->|"Query Real-Time Stats"| DB
     end
 ```
 
