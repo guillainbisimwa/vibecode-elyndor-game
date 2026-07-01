@@ -2,13 +2,68 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useGameStore } from '../../store/gameStore';
 import GameplayCanvas from '../Game/GameplayCanvas';
 
+interface GlobeProps {
+  value: number;
+  max: number;
+  label: string;
+  ring: string;
+  from: string;
+  to: string;
+}
+
+/** A curved ARPG-style orb showing a vital stat as a radial fill ring + liquid orb. */
+const Globe: React.FC<GlobeProps> = ({ value, max, label, ring, from, to }) => {
+  const pct = max > 0 ? Math.max(0, Math.min(1, value / max)) : 0;
+  const R = 34;
+  const C = 2 * Math.PI * R;
+  return (
+    <div className="flex flex-col items-center gap-1">
+      <div className="relative w-[84px] h-[84px]">
+        <svg viewBox="0 0 80 80" className="w-full h-full -rotate-90">
+          <circle cx="40" cy="40" r={R} fill="none" stroke="#141724" strokeWidth="6" />
+          <circle
+            cx="40"
+            cy="40"
+            r={R}
+            fill="none"
+            stroke={ring}
+            strokeWidth="6"
+            strokeLinecap="round"
+            strokeDasharray={C}
+            strokeDashoffset={C * (1 - pct)}
+            style={{ transition: 'stroke-dashoffset 0.3s ease' }}
+          />
+        </svg>
+        <div className="absolute inset-0 flex items-center justify-center">
+          <div
+            className="w-[52px] h-[52px] rounded-full flex items-center justify-center"
+            style={{
+              background: `radial-gradient(circle at 32% 28%, ${from}, ${to})`,
+              boxShadow: `0 0 12px ${ring}66, inset 0 -6px 10px rgba(0,0,0,0.5)`,
+            }}
+          >
+            <span className="text-[11px] font-bold font-mono text-white drop-shadow">{value}</span>
+          </div>
+        </div>
+      </div>
+      <span className="text-[9px] font-mono tracking-widest text-[#8a8da3] uppercase">{label}</span>
+    </div>
+  );
+};
+
+const SKILLS = [
+  { icon: '🗡️', key: '1', color: '#e2b653' },
+  { icon: '🔨', key: '2', color: '#e2b653' },
+  { icon: '🔮', key: '3', color: '#2b6ede' },
+  { icon: '🏃', key: '4', color: '#27ae60' },
+];
+
 const GameplayUI: React.FC = () => {
   const {
     character,
     activeNpc,
     dialogueHistory,
     chatWithNpc,
-    setActiveNpc,
     enemyHp,
     enemyMaxHp,
     enemyName,
@@ -52,36 +107,38 @@ const GameplayUI: React.FC = () => {
       {/* Left Panel: Hero Vitality Frame */}
       <div className="w-full md:w-[260px] bg-[#0c0d13]/90 border border-elyndor-border/15 p-4 rounded-lg flex flex-col gap-5 relative z-10 justify-between">
         <div className="flex flex-col gap-4">
-          <div className="border-b border-elyndor-border/10 pb-2">
-            <span className="text-[9px] text-[#5b5e70] tracking-widest font-bold uppercase font-mono">PLAYER INTERFACE</span>
-            <h2 className="font-cinzel text-base font-bold text-white uppercase">{character.name}</h2>
-            <p className="text-[10px] text-elyndor-gold font-bold font-mono">LVL {character.level} {character.character_class}</p>
-          </div>
-
-          {/* HP Bar */}
-          <div className="flex flex-col gap-1 text-xs">
-            <div className="flex justify-between items-center text-[10px] font-bold font-mono">
-              <span className="text-red-400">VIT HP</span>
-              <span>{character.health} / {character.max_health}</span>
+          <div className="border-b border-elyndor-border/10 pb-2 flex items-center gap-3">
+            <div
+              className="w-11 h-11 rounded-full flex items-center justify-center border-2 border-elyndor-gold/60 shrink-0"
+              style={{ background: 'radial-gradient(circle at 30% 25%, #2b2d41, #0c0d13)' }}
+            >
+              <span className="text-lg">
+                {character.character_class === 'Mage' ? '🧙' : character.character_class === 'Ranger' ? '🏹' : '⚔️'}
+              </span>
             </div>
-            <div className="w-full bg-[#141724] h-3.5 rounded border border-[#2b2d41] overflow-hidden p-0.5">
-              <div 
-                className="h-full bg-gradient-to-r from-red-700 to-red-500 rounded transition-all duration-300"
-                style={{ width: `${(character.health / character.max_health) * 100}%` }}
-              />
+            <div>
+              <span className="text-[9px] text-[#5b5e70] tracking-widest font-bold uppercase font-mono">PLAYER INTERFACE</span>
+              <h2 className="font-cinzel text-base font-bold text-white uppercase leading-tight">{character.name}</h2>
+              <p className="text-[10px] text-elyndor-gold font-bold font-mono">LVL {character.level} {character.character_class}</p>
             </div>
           </div>
 
-          {/* Mana Bar */}
+          {/* Vital globes */}
+          <div className="flex justify-around items-center py-1">
+            <Globe value={character.health} max={character.max_health} label="Health" ring="#e0574a" from="#ff7a6a" to="#8c1d1d" />
+            <Globe value={character.mana} max={character.max_mana} label="Mana" ring="#3f8bff" from="#6fb0ff" to="#1c3a7a" />
+          </div>
+
+          {/* XP progress toward next level */}
           <div className="flex flex-col gap-1 text-xs">
-            <div className="flex justify-between items-center text-[10px] font-bold font-mono">
-              <span className="text-blue-400">ARC MANA</span>
-              <span>{character.mana} / {character.max_mana}</span>
+            <div className="flex justify-between items-center text-[9px] font-bold font-mono tracking-wider">
+              <span className="text-elyndor-gold">EXPERIENCE</span>
+              <span className="text-[#a3a5be]">{character.experience} / {character.level * 1000}</span>
             </div>
-            <div className="w-full bg-[#141724] h-3.5 rounded border border-[#2b2d41] overflow-hidden p-0.5">
-              <div 
-                className="h-full bg-gradient-to-r from-blue-700 to-blue-500 rounded transition-all duration-300"
-                style={{ width: `${(character.mana / character.max_mana) * 100}%` }}
+            <div className="w-full bg-[#141724] h-2.5 rounded border border-[#2b2d41] overflow-hidden p-0.5">
+              <div
+                className="h-full bg-gradient-to-r from-amber-600 to-elyndor-gold rounded transition-all duration-300"
+                style={{ width: `${Math.min(100, (character.experience / (character.level * 1000)) * 100)}%` }}
               />
             </div>
           </div>
@@ -104,6 +161,31 @@ const GameplayUI: React.FC = () => {
       {/* Center Panel: Interactive 3D Game */}
       <div className="flex-1 h-full relative">
         <GameplayCanvas />
+
+        {/* ARPG skill/action bar (visual HUD) */}
+        <div className="absolute bottom-4 left-1/2 -translate-x-1/2 z-20 pointer-events-none">
+          <div className="flex items-center gap-2 bg-[#0c0d15]/80 border border-elyndor-border/30 rounded-xl px-3 py-2 backdrop-blur-sm shadow-2xl">
+            {SKILLS.map((s) => (
+              <div
+                key={s.key}
+                className="relative w-11 h-11 rounded-lg flex items-center justify-center bg-[#141724]/80 border"
+                style={{ borderColor: `${s.color}55` }}
+              >
+                <span className="text-lg">{s.icon}</span>
+                <span className="absolute -bottom-1 -right-1 text-[8px] font-mono font-bold text-[#8a8da3] bg-[#06070a] rounded px-1 border border-elyndor-border/20">
+                  {s.key}
+                </span>
+              </div>
+            ))}
+            <div className="w-px h-8 bg-elyndor-border/20 mx-1" />
+            <div className="relative w-11 h-11 rounded-lg flex items-center justify-center bg-[#1c0c0c]/80 border border-red-900/60">
+              <span className="text-lg">🧪</span>
+              <span className="absolute -bottom-1 -right-1 text-[8px] font-mono font-bold text-red-300 bg-[#06070a] rounded px-1 border border-red-900/40">
+                x{potionsCount}
+              </span>
+            </div>
+          </div>
+        </div>
       </div>
 
       {/* Right Panel: Dynamic AI Multi-Agent Interaction Overlays */}

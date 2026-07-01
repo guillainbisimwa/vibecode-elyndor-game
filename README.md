@@ -10,6 +10,14 @@
 
 ---
 
+## 🎬 Gameplay Preview
+
+![Legends of Elyndor — real-time 3D gameplay in the Eldergate forest](docs/gameplay-3d.png)
+
+*The **Eldergate** region rendered live in 3D: a torch-lit, fog-wrapped forest where your hero explores a themed world built from the backend's procedural map. Interactive objects glow with bloom — a blue crystal NPC (**Talk**), a horned monster (**Fight**), loot chests (**Loot**), and an arcane exit portal — while the HUD shows a live minimap, health/mana orbs, an XP bar, and an ARPG skill bar. Each region (Shadow Vale, Crystal Peaks, Ember Desert) has its own palette, lighting, sky, and props.*
+
+---
+
 ## 🌌 1. The Pitch: Problem, Solution, & Value
 
 ### 🔴 The Problem Statement
@@ -18,7 +26,7 @@ Creating rich, high-fidelity RPG worlds requires a massive team of narrative des
 ### 🟢 The Solution: Legends of Elyndor
 `VibeCode: Legends of Elyndor` is an interactive dark-fantasy RPG built on top of a **collaborative six-agent AI engine**. Instead of simple randomization, specialized AI agents dynamically design, write, scale, and maintain an evolving, persistent medieval fantasy world. 
 
-The game is fully playable in the browser using a high-fidelity **Vite + React + TypeScript + Zustand + Phaser 3** frontend game engine and a **FastAPI + SQLAlchemy + PostgreSQL/SQLite** backend.
+The game is fully playable in the browser using a high-fidelity **Vite + React + TypeScript + Zustand + Three.js (WebGL)** real-time 3D frontend game engine and a **FastAPI + SQLAlchemy + PostgreSQL/SQLite** backend.
 
 ### 🤖 Why Agents? The Unique AI Value
 Multiple autonomous agents are uniquely qualified to solve this problem because world creation requires a split-responsibility model where different agents represent different "professional roles". By using a multi-agent structure, we can separate narrative whimsy from structural path validation and math balancing.
@@ -33,28 +41,28 @@ The game's lifecycle is managed by six collaborative AI agents executing discret
 
 ```mermaid
 graph TD
-    User([Player Browser Client]) -->|Interact / Move / Chat| FastAPI[FastAPI Web Server]
-    
-    subgraph Multi-Agent Collaboration Studio [Multi-Agent Collaboration Studio]
-        FastAPI -->|Request Dialogue / Lore| Narrative[Narrative Agent (ADK-powered)]
-        FastAPI -->|Generate Tilemap Layout| World[World Agent]
-        FastAPI -->|Color Themes / Art Prompts| Asset[Asset Agent]
-        FastAPI -->|Scale Rewards / Leveling| Quest[Quest Agent]
-        FastAPI -->|Validate Events / Mutate State| Consistency[Consistency Agent]
-        FastAPI -->|Balance DMG / Skill Pools| Combat[Combat Agent]
-        
-        Narrative -->|Instantiate ADK Agent & Runner| ADK[Google ADK Engine]
-        World -->|BFS Solvability check| PathValidator[Path Solvability BFS Engine]
-    end
-    
-    subgraph Database State Storage [Database State Storage]
-        FastAPI -->|Read / Write State| DB[(PostgreSQL / SQLite Database)]
-        Consistency -->|Mark dead NPCs / Lore history| DB
+    User(["Player Browser Client"]) -->|"Interact / Move / Chat"| FastAPI["FastAPI Web Server"]
+
+    subgraph studio [Multi-Agent Collaboration Studio]
+        FastAPI -->|"Request Dialogue / Lore"| Narrative["Narrative Agent (ADK-powered)"]
+        FastAPI -->|"Generate Tilemap Layout"| World["World Agent"]
+        FastAPI -->|"Color Themes / Art Prompts"| Asset["Asset Agent"]
+        FastAPI -->|"Scale Rewards / Leveling"| Quest["Quest Agent"]
+        FastAPI -->|"Validate Events / Mutate State"| Consistency["Consistency Agent"]
+        FastAPI -->|"Balance DMG / Skill Pools"| Combat["Combat Agent"]
+
+        Narrative -->|"Instantiate ADK Agent & Runner"| ADK["Google ADK Engine"]
+        World -->|"BFS Solvability check"| PathValidator["Path Solvability BFS Engine"]
     end
 
-    subgraph External Developer / Agent tooling [External Developer / Agent tooling]
-        Developer([LLM Developer / Client]) -->|JSON-RPC via Stdio| MCPServer[Custom MCP Server]
-        MCPServer -->|Query Real-Time Stats| DB
+    subgraph storage [Database State Storage]
+        FastAPI -->|"Read / Write State"| DB[("PostgreSQL / SQLite Database")]
+        Consistency -->|"Mark dead NPCs / Lore history"| DB
+    end
+
+    subgraph tooling [External Developer / Agent Tooling]
+        Developer(["LLM Developer / Client"]) -->|"JSON-RPC via Stdio"| MCPServer["Custom MCP Server"]
+        MCPServer -->|"Query Real-Time Stats"| DB
     end
 ```
 
@@ -162,3 +170,58 @@ npm install
 npm run dev
 ```
 Open [http://localhost:3000](http://localhost:3000) in your browser. The system will automatically detect the local API server and sync character state.
+
+---
+
+## 🕹️ 8. How to Play
+
+> [!TIP]
+> No account or API key needed. If the backend is unavailable, the game drops into a fully playable **offline sandbox** — just log in with any username/password to start.
+
+### 1. Create your hero
+1. On the **login screen**, enter any username and password and press **Login**.
+2. Choose a class — each has different starting stats:
+   - ⚔️ **Warrior** — high health and strength (melee bruiser).
+   - 🧙 **Mage** — high intelligence and mana (arcane damage).
+   - 🏹 **Ranger** — high dexterity (agile skirmisher).
+3. Name your hero and confirm. You begin in **Eldergate** at Level 1.
+
+### 2. From the Dashboard
+- Review your **stats, inventory, quests, and world progress**.
+- Press **Enter Game World** to open the **World Map**, then **Travel** to any unlocked region. Regions are level-gated — reach the required level to unlock **Shadow Vale**, **Crystal Peaks**, and **Ember Desert**.
+
+### 3. Explore the 3D world
+
+| Action | Controls |
+| :--- | :--- |
+| Move your hero | `W` `A` `S` `D` or the **Arrow keys** |
+| Orbit the camera | **Click + drag** |
+| Zoom in / out | **Mouse scroll** |
+
+Walk onto a tile to interact with what's on it:
+
+| Icon | Object | What happens |
+| :--- | :--- | :--- |
+| 💬 | **NPC crystal (Talk)** | Opens dialogue. Ask about a *"quest"* or *"help"* to receive dynamic tasks. |
+| ⚔️ | **Monster (Fight)** | Starts **turn-based combat** in the right-hand panel. |
+| 🪙 | **Loot chest** | Instantly claims bonus gold. |
+| 🚪 | **Exit portal** | Clears the region and returns you to town. |
+
+A contextual prompt appears at the bottom of the screen whenever you are next to something interactive, and the **minimap** (top-right) shows nearby NPCs, monsters, loot, and the exit.
+
+### 4. Combat
+When a fight begins, use the action panel:
+- 🗡️ **Swift Strike** — fast, reliable damage.
+- 🔨 **Heavy Bash** — high damage.
+- 🔮 **Aether Blast** — arcane skill.
+- 🏃 **Shadow Step** — dodge the enemy's next hit.
+- 🧪 **Health Potion** — restore HP (limited quantity).
+
+Win to earn **gold and XP**; lose all your HP and you fall (respawn from the failure screen). Your **health/mana orbs** and **XP bar** update live in the left panel.
+
+### 5. Progress & goals
+- Complete quests and claim their rewards from the **Dashboard** to gain gold and XP.
+- Level up to **unlock harder regions** and stronger loot.
+- Use **Retreat to Town** at any time to return to the World Map safely.
+
+Good luck, hero — the shadow over Elyndor is spreading. 👑

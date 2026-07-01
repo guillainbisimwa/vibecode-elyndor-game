@@ -112,8 +112,8 @@ interface GameState {
   
   // API Actions
   setScreen: (screen: GameScreen) => void;
-  login: (username: string, password: str) => Promise<boolean>;
-  register: (username: string, password: str) => Promise<boolean>;
+  login: (username: string, password: string) => Promise<boolean>;
+  register: (username: string, password: string) => Promise<boolean>;
   logout: () => void;
   fetchRegions: () => Promise<void>;
   createCharacter: (name: string, character_class: 'Warrior' | 'Mage' | 'Ranger', region: string) => Promise<boolean>;
@@ -446,7 +446,7 @@ export const useGameStore = create<GameState>((set, get) => ({
   },
 
   claimQuestReward: async (questId) => {
-    const { token, isMockMode, character, inventory } = get();
+    const { token, isMockMode, character } = get();
     
     if (isMockMode || !token) {
       // Process offline claim
@@ -501,7 +501,7 @@ export const useGameStore = create<GameState>((set, get) => ({
   },
 
   submitCombatTurn: async (attackType) => {
-    const { token, isMockMode, character, enemyHp, enemyMaxHp, enemyName } = get();
+    const { token, isMockMode, character, enemyHp, enemyName } = get();
     if (!character) return;
     
     if (isMockMode || !token) {
